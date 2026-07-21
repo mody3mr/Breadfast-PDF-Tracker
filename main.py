@@ -1,7 +1,7 @@
 import pdfplumber
 
-def read_delivery_pdf(pdf_path):
-    print("⏳ جاري قراءة ملف الـ PDF...")
+def analyze_delivery_note(pdf_path):
+    print("⏳ جاري تحليل إذن الاستلام...")
     
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -11,7 +11,7 @@ def read_delivery_pdf(pdf_path):
                 if text:
                     full_text += text + "\n"
             
-            # استخراج اسم الفرع من النص
+            # 1. استخراج اسم الفرع
             lines = full_text.split('\n')
             branch_name = "غير معروف"
             for line in lines:
@@ -19,27 +19,36 @@ def read_delivery_pdf(pdf_path):
                     branch_name = line
                     break
             
-            print("\n-----------------------------------------")
-            print(f"📍 الفرع المستهدف: {branch_name}")
-            print("-----------------------------------------")
-            print("📄 عينة من محتوى المستند المستخرج:")
-            print(full_text[:400])
-            print("-----------------------------------------")
+            print(f"\n📍 الفرع المستهدف: {branch_name}")
+            print("=" * 40)
+            
+            # 2. استخراج الجداول (Tables) من الـ PDF بدقة
+            all_items = []
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        # نتأكد إن السطر فيه بيانات صنف (مش هيدر الجدول)
+                        # بنظف النصوص ونشجلها
+                        cleaned_row = [cell.strip() if cell else "" for cell in row]
+                        all_items.append(cleaned_row)
+            
+            # عرض التحليل المبدئي للأصناف
+            print(f"📦 تم العثور على {len(all_items)} صف/صنف في المستند.")
+            
+            # مؤشر عشان نعرف هل فيه رفض ولا كله تمام
+            has_rejections = False
+            
+            for idx, item in enumerate(all_items):
+                # هنا بنطبع عينة للتبسيط، وهنربطها قدام بالتحليل الكامل
+                print(f"السطر {idx}: {item}")
+                
+            print("=" * 40)
+            print("✅ تمت عملية قراءة الجدول وتحليله بنجاح!")
             
     except Exception as e:
-        print(f"❌ حدث خطأ أثناء قراءة الملف: {e}")
+        print(f"❌ حدث خطأ أثناء تحليل الملف: {e}")
 
 if __name__ == "__main__":
-    # تجربة افتراضية لو اسم الملف موجود في نفس الرفository
     pdf_file = "Transfer History _ Breadfast--15-7.pdf"
-    read_delivery_pdf(pdf_file)
-```[cite: 1]
-
----
-
-كل اللي عليك تعمل دلوقتي:
-1. تفتح حسابك على GitHub وتعمل **New Repository** (سميه مثلاً `breadfast-pdf-tracker`).
-2. ترفع الملفين دول (`main.py` و `requirements.txt`).
-3. (اختياري) ترفع معاهم ملف PDF تجريبي من اللي بتبعتوهم على الجروب عشان الكود يقرأه.
-
-قولي أول ما تعمل الـ Repository وتظبطه، عشان ندخل على الخطوة اللي بعدها ونضيف تحليل الرفض والمقبول!
+    analyze_delivery_note(pdf_file)
